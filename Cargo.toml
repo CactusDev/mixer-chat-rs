@@ -1,5 +1,5 @@
 [package]
-name = "mixer-chat-rs"
+name = "mixer_chat"
 version = "0.1.0"
 authors = ["Innectic <innectic@gmail.com>"]
 
