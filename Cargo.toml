@@ -1,0 +1,6 @@
+[package]
+name = "mixer-chat-rs"
+version = "0.1.0"
+authors = ["Innectic <innectic@gmail.com>"]
+
+[dependencies]
