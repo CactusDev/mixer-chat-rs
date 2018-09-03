@@ -25,6 +25,10 @@ impl MixerAPI {
 		}
 	}
 
+	pub fn reauth(&mut self, auth: &str) {
+		self.authorization = Authorization(Bearer { token: auth.to_string() });
+	}
+
 	/// Get the current user based off the `token` that was provided.
 	pub fn get_self(&self) -> Result<User, String> {
 		let endpoint = mixer_endpoint!("users/current");
@@ -102,9 +106,5 @@ impl MixerAPI {
 			},
 			Err(e) => Err(e.to_string())
 		}
-	}
-
-	pub fn join_chat(&mut self, channel: &str) -> Result<(), ()> {  // TODO: figure out a functional error type for this.
-		Err(())
 	}
 }
