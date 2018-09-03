@@ -220,3 +220,10 @@ pub struct User {
 	pub channel: Channel,
 	pub groups: Vec<UserGroup>
 }
+
+#[derive(Deserialize)]
+pub struct APIChatResponse {
+	pub authkey:     String,
+	pub endpoints:   Vec<String>,
+	pub permissions: Vec<String>
+}
