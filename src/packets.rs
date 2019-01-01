@@ -33,7 +33,7 @@ pub enum EventType {
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum MethodType {
 	Auth,
 	Msg,

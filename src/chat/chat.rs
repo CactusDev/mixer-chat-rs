@@ -186,4 +186,18 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)
 	}
+
+	pub fn delete_message(&mut self, message: &str) -> Result<(), String> {
+		let arguments = vec! [ message.to_string() ];
+
+		let packet = ArgumentPacket {
+			packet_type: PacketType::Method,
+			method: MethodType::DeleteMessage,
+			arguments,
+			id: self.packet_id
+		};
+
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
+	}
 }
