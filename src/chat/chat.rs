@@ -16,7 +16,7 @@ use websocket::{
 
 /// Connect to Mixer's chat and listen for messages
 pub struct MixerChat {
-	channels:   Vec<String>,
+	channel:   String,
 	packet_id: u64,
 	
 	endpoints:     Vec<String>,
@@ -32,9 +32,9 @@ pub struct MixerChat {
 
 impl MixerChat {
 
-	pub fn new(token: &str, initial: &str, handler: Box<Handler>) -> Self {
+	pub fn new(token: &str, channel: &str, handler: Box<Handler>) -> Self {
 		MixerChat {
-			channels: vec! [initial.to_string()],
+			channel: channel.to_string(),
 			packet_id: 0,
 			endpoints: vec! [],
 			last_endpoint: 0,
@@ -47,6 +47,7 @@ impl MixerChat {
 	}
 
 	fn send_packet(&mut self, message: OwnedMessage) -> Result<(), String> {
+		self.packet_id += 1;
 		match self.client {
 			Some(ref mut client) => client.send_message(&message)
 				.map_err(|_| "could not send message".to_string())?,
@@ -85,10 +86,9 @@ impl MixerChat {
 	pub fn connect(&mut self) -> Result<(), String> {
 		self.me = Some(self.api.get_self()?);
 
-		let initial_channel = self.channels[0].clone();
 		// Get the information about the chat we're going to connect to
-		let chat = self.api.get_chat(&initial_channel)?;
-		let channel_data = self.api.get_channel(&initial_channel)?;
+		let chat = self.api.get_chat(&self.channel)?;
+		let channel_data = self.api.get_channel(&self.channel)?;
 		
 		self.endpoints = chat.endpoints;
 		self.permissions = chat.permissions;
@@ -103,12 +103,13 @@ impl MixerChat {
 			.unwrap());
 		println!("Connected to Mixer!");
 
-		println!("Joining initial channel: {}", &initial_channel);
+		println!("Joining initial channel: {}", &self.channel);
 		self.join(&channel_data, &chat.authkey);
 
 		Ok(())
 	}
 
+	/// Begin handing chat packets for the connected channel
 	pub fn handle_chat(&mut self) -> Result<(), String> {
 		match self.client {
 			Some(ref mut client) => {
@@ -139,5 +140,23 @@ impl MixerChat {
 			None => Err("no client".to_string())
 		};
 		Ok(())
+	}
+
+	/// Send a message to the connected channel
+	pub fn send_message(&mut self, message: String, target: Option<String>) -> Result<(), String> {
+		let (message_segment, method) = match target {
+			Some(target) => (vec! [ target, message ], MethodType::Whisper),
+			None => (vec! [ message ], MethodType::Msg)
+		};
+
+		let packet = MessagePacket {
+			packet_type: PacketType::Method,
+			method: method,
+			arguments: message_segment,
+			id: self.packet_id
+		};
+		
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
 	}
 }

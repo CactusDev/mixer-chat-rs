@@ -46,7 +46,7 @@ pub enum MethodType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum BasePacket {
+pub struct BasePacket {
 	#[serde(rename = "type")]
 	pub packet_type: PacketType
 }
@@ -236,4 +236,13 @@ pub struct APIChatResponse {
 	pub authkey:     String,
 	pub endpoints:   Vec<String>,
 	pub permissions: Vec<String>
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct MessagePacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub method: MethodType,
+	pub arguments: Vec<String>,
+	pub id: u64
 }
