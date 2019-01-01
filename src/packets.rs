@@ -6,17 +6,17 @@ use std::{
 	collections::HashMap
 };
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum WebsocketPacketType {
+#[derive(Clone, Serialize, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PacketType {
 	Method,
 	Reply,
 	Event
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "event", rename_all = "PascalCase")]
-pub enum WebsocketEventType {
+#[derive(Clone, Serialize, Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub enum EventType {
 	WelcomeEvent,
 	ChatMessage,
 	UserJoin,
@@ -30,9 +30,9 @@ pub enum WebsocketEventType {
 	UserTimeout
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "method", rename_all = "PascalCase")]
-pub enum WebsocketMethodType {
+#[derive(Clone, Serialize, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MethodType {
 	Auth,
 	Msg,
 	Whisper,
@@ -43,37 +43,83 @@ pub enum WebsocketMethodType {
 	History,
 }
 
-#[derive(Deserialize)]
+// #[derive(Clone, Serialize, Debug, Deserialize)]
+// #[serde(tag = "type", rename_all = "camelCase")]
+// pub enum PacketType {
+// 	Method,
+// 	Reply,
+// 	Event
+// }
+
+// #[derive(Clone, Serialize, Debug, Deserialize)]
+// #[serde(tag = "event", rename_all = "PascalCase")]
+// pub enum EventType {
+// 	WelcomeEvent,
+// 	ChatMessage,
+// 	UserJoin,
+// 	UserLeave,
+// 	PollStart,
+// 	PollEnd,
+// 	DeleteMessage,
+// 	PurgeMessage,
+// 	ClearMessages,
+// 	UserUpdate,
+// 	UserTimeout
+// }
+
+// #[derive(Clone, Serialize, Debug, Deserialize)]
+// #[serde(tag = "method", rename_all = "lowercase")]
+// pub enum MethodType {
+// 	Auth,
+// 	Msg,
+// 	Whisper,
+// 	Timeout,
+// 	Purge,
+// 	DeleteMessage,
+// 	ClearMessages,
+// 	History,
+// }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AuthenticationPacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub method: MethodType,
+	pub arguments: serde_json::Value,
+	pub id: u64
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct WelcomeEventData {
-	server: String
+	pub server: String
 }
 
 /// The first packet that is sent by the Mixer chat server.
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct WelcomeEventPacket {
 	#[serde(rename = "type")]
-	packet_type: WebsocketPacketType,
-	event: WebsocketEventType,
-	data: WelcomeEventData
+	pub packet_type: PacketType,
+	pub event: EventType,
+	pub data: WelcomeEventData
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChatMessageEmoticonCoordsData {
-	x: u16,
-	y: u16,
-	width:  u16,
-	height: u16
+	pub x: u16,
+	pub y: u16,
+	pub width:  u16,
+	pub height: u16
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "source", rename_all = "camelCase")]
 pub enum ChatMessageEmoticonSource {
 	External,
 	Builtin
 }
 
-#[derive(Deserialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ChatMessageType {
 	Text,
 	Tag,
@@ -81,33 +127,32 @@ pub enum ChatMessageType {
 	Link
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChatMessageMessage {
 	#[serde(rename = "type")]
-	message_type: ChatMessageType,
-	data: Option<String>,
-	text: Option<String>,
-	url:  Option<String>,
-	id:   Option<u32>,
-	source: Option<ChatMessageEmoticonSource>,
-	coords: Option<ChatMessageEmoticonCoordsData>
+	pub message_type: ChatMessageType,
+	pub data: Option<String>,
+	pub text: Option<String>,
+	pub url:  Option<String>,
+	pub id:   Option<u32>,
+	pub source: Option<ChatMessageEmoticonSource>,
+	pub coords: Option<ChatMessageEmoticonCoordsData>
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChatMessageMeta {
-	whisper:  Option<bool>,
-	me:       Option<bool>,
-	censored: Option<bool>
+	pub whisper:  Option<bool>,
+	pub me:       Option<bool>,
+	pub censored: Option<bool>
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChatMessageMessageData {
-	message: Vec<ChatMessageMessage>,
-	meta:    ChatMessageMeta
+	pub message: Vec<ChatMessageMessage>,
+	pub meta:    ChatMessageMeta
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ChatMessageEventData {
 	pub channel: u32,
 	pub id: String,
@@ -120,15 +165,15 @@ pub struct ChatMessageEventData {
 	pub target: Option<String>
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ChatMessageEventPacket {
 	#[serde(rename = "type")]
-	packet_type: WebsocketPacketType,
-	pub event: WebsocketEventType,
+	packet_type: PacketType,
+	pub event: EventType,
 	pub data: ChatMessageEventData
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UserJoinData {
 	pub originating_channel: u64,
 	pub username: String,
@@ -136,30 +181,30 @@ pub struct UserJoinData {
 	pub id: u64
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UserJoinPacket {
 	#[serde(rename = "type")]
-	pub packet_type: WebsocketPacketType,
-	pub event: WebsocketEventType,
+	pub packet_type: PacketType,
+	pub event: EventType,
 	pub data: UserJoinData 
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct UserLeaveData {
 	pub originating_channel: u64,
 	pub username: String,
 	pub id: u64
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct UserLeavePacket {
 	#[serde(rename = "type")]
-	pub packet_type: WebsocketPacketType,
-	pub event: WebsocketEventType,
+	pub packet_type: PacketType,
+	pub event: EventType,
 	pub data: UserLeaveData
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Channel {
 	pub id: u32,
@@ -193,7 +238,7 @@ pub struct Channel {
 	pub costream_id: Option<String>
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum UserRole {
 	User,
 	Banned,
@@ -209,19 +254,19 @@ pub enum UserRole {
 	Owner
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct UserGroup {
 	pub id: u32,
 	pub name: UserRole
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct User {
 	pub channel: Channel,
 	pub groups: Vec<UserGroup>
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct APIChatResponse {
 	pub authkey:     String,
 	pub endpoints:   Vec<String>,

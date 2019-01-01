@@ -2,9 +2,12 @@
 use std::vec::Vec;
 use api::MixerAPI;
 use chat::handler::Handler;
+use packets::*;
 
 use websocket::client::sync::Client;
 use websocket::stream::sync::{TlsStream, TcpStream};
+
+use serde_json::json;
 
 use websocket::{
 	client::ClientBuilder,
@@ -13,7 +16,7 @@ use websocket::{
 
 /// Connect to Mixer's chat and listen for messages
 pub struct MixerChat {
-	pub channel:   String,
+	channels:   Vec<String>,
 	packet_id: u64,
 	
 	endpoints:     Vec<String>,
@@ -22,22 +25,34 @@ pub struct MixerChat {
 
 	pub api: MixerAPI,
 	handler: Box<Handler>,
-	client: Option<Client<TlsStream<TcpStream>>>
+	client: Option<Client<TlsStream<TcpStream>>>,
+
+	me: Option<User>
 }
 
 impl MixerChat {
 
-	pub fn new(token: &str, channel: &str, handler: Box<Handler>) -> Self {
+	pub fn new(token: &str, initial: &str, handler: Box<Handler>) -> Self {
 		MixerChat {
-			channel: channel.to_string(),
+			channels: vec! [initial.to_string()],
 			packet_id: 0,
 			endpoints: vec! [],
 			last_endpoint: 0,
 			permissions: vec! [],
 			api: MixerAPI::new(token),
 			handler,
-			client: None
+			client: None,
+			me: None
 		}
+	}
+
+	fn send_packet(&mut self, message: OwnedMessage) -> Result<(), String> {
+		match self.client {
+			Some(ref mut client) =>
+				client.send_message(&message).map_err(|_| "could not send message".to_string())?,
+			None => return Err("not connected".to_string())
+		}
+		Ok(())
 	}
 
 	fn get_next_endpoint(&mut self) -> &str {
@@ -50,10 +65,30 @@ impl MixerChat {
 		}
 	}
 
+	/// join the current connection to a given channel.
+	pub fn join(&mut self, channel: &Channel, authkey: &str) -> Result<(), String> {
+		let me = &self.me.clone().unwrap();
+		let packet = AuthenticationPacket {
+			id: self.packet_id,
+			packet_type: PacketType::Method,
+			method: MethodType::Auth,
+			arguments: json!([ channel.id, me.channel.user_id, authkey ])
+		};
+
+		let message = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(message)?;
+
+		Ok(())
+	}
+
 	/// Connect to chat of the Mixer channel provided.
 	pub fn connect(&mut self) -> Result<(), String> {
+		self.me = Some(self.api.get_self()?);
+
+		let initial_channel = self.channels[0].clone();
 		// Get the information about the chat we're going to connect to
-		let chat = self.api.get_chat(&self.channel)?;
+		let chat = self.api.get_chat(&initial_channel)?;
+		let channel_data = self.api.get_channel(&initial_channel)?;
 		
 		self.endpoints = chat.endpoints;
 		self.permissions = chat.permissions;
@@ -68,6 +103,9 @@ impl MixerChat {
 			.unwrap());
 		println!("Connected to Mixer!");
 
+		println!("Joining initial channel: {}", &initial_channel);
+		self.join(&channel_data, &chat.authkey);
+
 		Ok(())
 	}
 
@@ -78,13 +116,22 @@ impl MixerChat {
 					match client.recv_message() {
 						Ok(packet) => {
 							match packet {
-								OwnedMessage::Text(text) => self.handler.on_message(text).unwrap(),
+								OwnedMessage::Text(text) => {
+									match serde_json::from_str::<ChatMessageEventPacket>(&text) {
+										Ok(packet) => self.handler.on_message(packet).unwrap(),
+										Err(e) => println!("{:?}", e)
+									};
+								},
 								OwnedMessage::Ping(packet) => client.send_message(&OwnedMessage::Ping(packet)).unwrap(),
 								OwnedMessage::Close(_) => break,
 								_ => println!("Unhandled packet type!")
 							};
+							Ok(())
 						},
-						Err(err) => println!("Encountered an error getting a packet: {:?}", err)
+						Err(err) => {
+							println!("Encountered an error getting a packet: {:?}", err);
+							Err(err)
+						}
 					};
 				}
 				Ok(())

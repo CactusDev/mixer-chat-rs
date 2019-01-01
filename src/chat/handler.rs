@@ -1,4 +1,6 @@
 
+use packets::ChatMessageEventPacket;
+
 pub trait Handler {
-	fn on_message(&mut self, message: String) -> Result<(), String>;
+	fn on_message(&mut self, message: ChatMessageEventPacket) -> Result<(), String>;
 }
