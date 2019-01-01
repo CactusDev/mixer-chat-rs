@@ -149,7 +149,7 @@ impl MixerChat {
 			None => (vec! [ message.to_string() ], MethodType::Msg)
 		};
 
-		let packet = MessagePacket {
+		let packet = ArgumentPacket {
 			packet_type: PacketType::Method,
 			method: method,
 			arguments,
@@ -164,9 +164,22 @@ impl MixerChat {
 	pub fn timeout_user(&mut self, user: &str, time: u16) -> Result<(), String> {
 		let arguments = vec! [ user.to_string(), time.to_string() ];
 
-		let packet = MessagePacket {
+		let packet = ArgumentPacket {
 			packet_type: PacketType::Method,
 			method: MethodType::Timeout,
+			arguments,
+			id: self.packet_id
+		};
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
+	}
+
+	pub fn purge_user(&mut self, user: &str) -> Result<(), String> {
+		let arguments = vec! [ user.to_string() ];
+
+		let packet = ArgumentPacket {
+			packet_type: PacketType::Method,
+			method: MethodType::Purge,
 			arguments,
 			id: self.packet_id
 		};
