@@ -211,4 +211,20 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)
 	}
+
+	pub fn get_history(&mut self, amount: u8) -> Result<(), String> {
+		if amount > 100 {
+			return Err("cannot get more than 100 messages in history".to_string());
+		}
+
+		let arguments = vec! [ amount ];
+		let packet = ArgumentPacket {
+			packet_type: PacketType::Method,
+			method: MethodType::History,
+			arguments,
+			id: self.packet_id
+		};
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
+	}
 }
