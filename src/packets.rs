@@ -6,6 +6,8 @@ use std::{
 	collections::HashMap
 };
 
+use serde_json::Value;
+
 #[derive(Clone, Serialize, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PacketType {
@@ -43,42 +45,11 @@ pub enum MethodType {
 	History,
 }
 
-// #[derive(Clone, Serialize, Debug, Deserialize)]
-// #[serde(tag = "type", rename_all = "camelCase")]
-// pub enum PacketType {
-// 	Method,
-// 	Reply,
-// 	Event
-// }
-
-// #[derive(Clone, Serialize, Debug, Deserialize)]
-// #[serde(tag = "event", rename_all = "PascalCase")]
-// pub enum EventType {
-// 	WelcomeEvent,
-// 	ChatMessage,
-// 	UserJoin,
-// 	UserLeave,
-// 	PollStart,
-// 	PollEnd,
-// 	DeleteMessage,
-// 	PurgeMessage,
-// 	ClearMessages,
-// 	UserUpdate,
-// 	UserTimeout
-// }
-
-// #[derive(Clone, Serialize, Debug, Deserialize)]
-// #[serde(tag = "method", rename_all = "lowercase")]
-// pub enum MethodType {
-// 	Auth,
-// 	Msg,
-// 	Whisper,
-// 	Timeout,
-// 	Purge,
-// 	DeleteMessage,
-// 	ClearMessages,
-// 	History,
-// }
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum BasePacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuthenticationPacket {
@@ -112,13 +83,6 @@ pub struct ChatMessageEmoticonCoordsData {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(tag = "source", rename_all = "camelCase")]
-pub enum ChatMessageEmoticonSource {
-	External,
-	Builtin
-}
-
-#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ChatMessageType {
 	Text,
@@ -135,8 +99,9 @@ pub struct ChatMessageMessage {
 	pub text: Option<String>,
 	pub url:  Option<String>,
 	pub id:   Option<u32>,
-	pub source: Option<ChatMessageEmoticonSource>,
-	pub coords: Option<ChatMessageEmoticonCoordsData>
+	pub source: Option<String>,
+	pub coords: Option<ChatMessageEmoticonCoordsData>,
+	pub alt: Option<HashMap<String, String>>
 }
 
 #[derive(Clone, Debug, Deserialize)]

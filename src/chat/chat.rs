@@ -48,8 +48,8 @@ impl MixerChat {
 
 	fn send_packet(&mut self, message: OwnedMessage) -> Result<(), String> {
 		match self.client {
-			Some(ref mut client) =>
-				client.send_message(&message).map_err(|_| "could not send message".to_string())?,
+			Some(ref mut client) => client.send_message(&message)
+				.map_err(|_| "could not send message".to_string())?,
 			None => return Err("not connected".to_string())
 		}
 		Ok(())
