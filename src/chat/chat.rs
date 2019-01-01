@@ -143,19 +143,33 @@ impl MixerChat {
 	}
 
 	/// Send a message to the connected channel
-	pub fn send_message(&mut self, message: String, target: Option<String>) -> Result<(), String> {
-		let (message_segment, method) = match target {
-			Some(target) => (vec! [ target, message ], MethodType::Whisper),
-			None => (vec! [ message ], MethodType::Msg)
+	pub fn send_message(&mut self, message: &str, target: Option<String>) -> Result<(), String> {
+		let (arguments, method) = match target {
+			Some(target) => (vec! [ target, message.to_string() ], MethodType::Whisper),
+			None => (vec! [ message.to_string() ], MethodType::Msg)
 		};
 
 		let packet = MessagePacket {
 			packet_type: PacketType::Method,
 			method: method,
-			arguments: message_segment,
+			arguments,
 			id: self.packet_id
 		};
-		
+
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
+	}
+
+	// Timeout a given user from chat for the provided time.
+	pub fn timeout_user(&mut self, user: &str, time: u16) -> Result<(), String> {
+		let arguments = vec! [ user.to_string(), time.to_string() ];
+
+		let packet = MessagePacket {
+			packet_type: PacketType::Method,
+			method: MethodType::Timeout,
+			arguments,
+			id: self.packet_id
+		};
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)
 	}
