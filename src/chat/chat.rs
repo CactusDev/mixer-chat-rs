@@ -200,4 +200,15 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)
 	}
+
+	pub fn clear_chat(&mut self) -> Result<(), String> {
+		let packet = ArgumentPacket {
+			packet_type: PacketType::Method,
+			method: MethodType::ClearMessages,
+			arguments: vec! [],
+			id: self.packet_id
+		};
+		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
+		self.send_packet(packet)
+	}
 }
