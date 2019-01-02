@@ -48,7 +48,7 @@ fn connect(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String> {
 
 impl MixerChat {
 
-	pub fn new(token: &str, channel: &str, handler: Box<Handler>) -> Result<Self, String> {
+	pub fn connect(token: &str, channel: &str, handler: Box<Handler>) -> Result<Self, String> {
 		let api = MixerAPI::new(token);
 		let me = api.get_self()?;
 		let chat = api.get_chat(channel)?;
