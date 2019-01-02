@@ -123,32 +123,20 @@ impl MixerChat {
 	/// Begin handing chat packets for the connected channel
 	pub fn handle_chat(&mut self) -> Result<(), String> {
 		match self.client {
-			Some(ref mut client) => {
-				loop {
-					match client.recv_message() {
-						Ok(packet) => {
-							match packet {
-								OwnedMessage::Text(text) => {
-									match serde_json::from_str::<ChatMessageEventPacket>(&text) {
-										Ok(_packet) => {
-											// TODO: What even
-											// let result = &self.handler.on_message(packet);
-											// self.handle_handler_result(&result);
-										},
-										Err(e) => {
-											println!("{:?}", e);
-										}
-									};
-								},
-								OwnedMessage::Ping(packet) => client.send_message(&OwnedMessage::Ping(packet)).unwrap(),
-								OwnedMessage::Close(_) => break,
-								_ => println!("Unhandled packet type!")
-							};
-						},
-						Err(err) => println!("Encountered an error getting a packet: {:?}", err)
-					}
-				}
-				Ok(())
+			Some(ref mut client) => loop {
+				match client.recv_message() {
+					Ok(packet) => {
+						match packet {
+							OwnedMessage::Ping(packet) => client.send_message(&OwnedMessage::Ping(packet)).unwrap(),
+							OwnedMessage::Text(text) => {
+								let packet: ChatMessageEventPacket = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+							},
+							OwnedMessage::Close(_) => return Ok(()),
+							_ => println!("Unhandled packet type!")
+						}
+					},
+					Err(e) => println!("{:?}", e)
+				};
 			},
 			None => Err("no client".to_string())
 		}
