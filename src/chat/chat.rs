@@ -217,7 +217,7 @@ impl MixerChat {
 			return Err("cannot get more than 100 messages in history".to_string());
 		}
 
-		let arguments = vec! [ amount ];
+		let arguments = vec! [ amount.to_string() ];
 		let packet = ArgumentPacket {
 			packet_type: PacketType::Method,
 			method: MethodType::History,
