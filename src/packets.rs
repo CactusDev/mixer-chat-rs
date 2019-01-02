@@ -6,8 +6,6 @@ use std::{
 	collections::HashMap
 };
 
-use serde_json::Value;
-
 #[derive(Clone, Serialize, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PacketType {

@@ -1,6 +1,4 @@
 
-use std::io::copy;
-
 use reqwest::{
 	header::{Authorization, Bearer},
 	StatusCode,

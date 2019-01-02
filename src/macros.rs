@@ -23,7 +23,7 @@ macro_rules! mixer_request {
 									Err(e) => Err(e.to_string())
 								}
 							},
-							Err(err) => Err("could not get response text".to_string())
+							Err(err) => Err(format!("could not get response text {}", err.to_string()))
 						}
 					},
 					_ => Err("unknown status".to_string())

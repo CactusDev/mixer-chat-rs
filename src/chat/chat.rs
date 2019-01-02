@@ -9,10 +9,7 @@ use websocket::stream::sync::{TlsStream, TcpStream};
 
 use serde_json::json;
 
-use websocket::{
-	client::ClientBuilder,
-	Message, OwnedMessage
-};
+use websocket::{client::ClientBuilder, OwnedMessage};
 
 /// Connect to Mixer's chat and listen for messages
 pub struct MixerChat {
@@ -113,7 +110,7 @@ impl MixerChat {
 		println!("Connected to Mixer!");
 
 		println!("Joining initial channel: {}", &self.channel);
-		self.join(&channel_data, &chat.authkey);
+		self.join(&channel_data, &chat.authkey)?;
 		println!("Connected to: {}", &self.channel);
 
 		// Now that we're connected to the channel, we want to fire the `on_connect` event.
@@ -133,15 +130,13 @@ impl MixerChat {
 							match packet {
 								OwnedMessage::Text(text) => {
 									match serde_json::from_str::<ChatMessageEventPacket>(&text) {
-										Ok(packet) => {
+										Ok(_packet) => {
 											// TODO: What even
 											// let result = &self.handler.on_message(packet);
 											// self.handle_handler_result(&result);
-											return Ok(());
 										},
 										Err(e) => {
 											println!("{:?}", e);
-											return Ok(());
 										}
 									};
 								},
@@ -149,19 +144,14 @@ impl MixerChat {
 								OwnedMessage::Close(_) => break,
 								_ => println!("Unhandled packet type!")
 							};
-							Ok(())
 						},
-						Err(err) => {
-							println!("Encountered an error getting a packet: {:?}", err);
-							Err(err)
-						}
-					};
+						Err(err) => println!("Encountered an error getting a packet: {:?}", err)
+					}
 				}
 				Ok(())
 			},
 			None => Err("no client".to_string())
-		};
-		Ok(())
+		}
 	}
 
 	/// Send a message to the connected channel
