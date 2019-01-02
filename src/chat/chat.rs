@@ -117,38 +117,33 @@ impl MixerChat {
 									continue;
 								}
 								let event_packet: EventPacket = event_packet.unwrap();
-								match event_packet.event {
+								let result = match event_packet.event {
 									EventType::ClearMessages => {
-										let result = self.handler.on_chat_cleared();
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_chat_cleared()
 									},
 									EventType::UserJoin => {
 										let user_packet = serde_json::from_str::<UserJoinPacket>(&text).unwrap();
-										let result = self.handler.on_user_join(user_packet);
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_user_join(user_packet)
 									},
 									EventType::UserLeave => {
 										let user_packet = serde_json::from_str::<UserLeavePacket>(&text).unwrap();
-										let result = self.handler.on_user_leave(user_packet);
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_user_leave(user_packet)
 									},
 									EventType::PurgeMessage => {
 										let purge_packet = serde_json::from_str::<PurgeUserPacket>(&text).unwrap();
-										let result = self.handler.on_user_purged(purge_packet);
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_user_purged(purge_packet)
 									},
 									EventType::UserTimeout => {
 										let timeout_packet = serde_json::from_str::<TimeoutPacket>(&text).unwrap();
-										let result = self.handler.on_user_timeout(timeout_packet);
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_user_timeout(timeout_packet)
 									},
 									EventType::ChatMessage => {
 										let chat_packet = serde_json::from_str::<ChatMessageEventPacket>(&text).unwrap();
-										let result = self.handler.on_message(chat_packet);
-										handle_handler_result(result, &mut self)?;
+										self.handler.on_message(chat_packet)
 									}
-									_ => {}
-								}
+									_ => HandlerResult::Nothing
+								};
+								handle_handler_result(result, &mut self)?;
 							},
 							PacketType::Method => unreachable!(),
 							PacketType::Reply => {}
