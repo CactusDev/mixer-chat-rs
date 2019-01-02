@@ -122,14 +122,37 @@ impl MixerChat {
 										let result = self.handler.on_chat_cleared();
 										handle_handler_result(result, &mut self)?;
 									},
+									EventType::UserJoin => {
+										let user_packet = serde_json::from_str::<UserJoinPacket>(&text).unwrap();
+										let result = self.handler.on_user_join(user_packet);
+										handle_handler_result(result, &mut self)?;
+									},
+									EventType::UserLeave => {
+										let user_packet = serde_json::from_str::<UserLeavePacket>(&text).unwrap();
+										let result = self.handler.on_user_leave(user_packet);
+										handle_handler_result(result, &mut self)?;
+									},
+									EventType::PurgeMessage => {
+										let purge_packet = serde_json::from_str::<PurgeUserPacket>(&text).unwrap();
+										let result = self.handler.on_user_purged(purge_packet);
+										handle_handler_result(result, &mut self)?;
+									},
+									EventType::UserTimeout => {
+										let timeout_packet = serde_json::from_str::<TimeoutPacket>(&text).unwrap();
+										let result = self.handler.on_user_timeout(timeout_packet);
+										handle_handler_result(result, &mut self)?;
+									},
+									EventType::ChatMessage => {
+										let chat_packet = serde_json::from_str::<ChatMessageEventPacket>(&text).unwrap();
+										let result = self.handler.on_message(chat_packet);
+										handle_handler_result(result, &mut self)?;
+									}
 									_ => {}
 								}
 							},
 							PacketType::Method => unreachable!(),
 							PacketType::Reply => {}
 						}
-						// let result = self.handler.on_message(packet);
-						// handle_handler_result(result, &mut self)?;
 					},
 					Err(_e) => println!("{}", text)
 				},
@@ -171,8 +194,6 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)?;
 
-		let result = self.handler.on_user_timeout(user, time);
-		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -188,8 +209,6 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)?;
 
-		let result = self.handler.on_user_purged(user);
-		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -206,8 +225,6 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)?;
 
-		let result = self.handler.on_message_deleted(message);
-		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -221,8 +238,6 @@ impl MixerChat {
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
 		self.send_packet(packet)?;
 
-		let result = self.handler.on_chat_cleared();
-		handle_handler_result(result, self)?;
 		Ok(())
 	}
 

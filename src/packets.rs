@@ -144,6 +144,7 @@ pub struct ChatMessageEventPacket {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserJoinData {
 	pub originating_channel: u64,
 	pub username: String,
@@ -152,6 +153,7 @@ pub struct UserJoinData {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserJoinPacket {
 	#[serde(rename = "type")]
 	pub packet_type: PacketType,
@@ -160,6 +162,7 @@ pub struct UserJoinPacket {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserLeaveData {
 	pub originating_channel: u64,
 	pub username: String,
@@ -167,6 +170,7 @@ pub struct UserLeaveData {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserLeavePacket {
 	#[serde(rename = "type")]
 	pub packet_type: PacketType,
@@ -255,6 +259,48 @@ pub struct ClearMessagesPacket {
 	pub packet_type: PacketType,
 	pub event: EventType,
 	pub data: ClearMessagesData
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ModeratorData {
+	pub user_name: String,
+	pub user_id: u32,
+	pub user_roles: Vec<String>,
+	pub user_level: u32
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PurgeUserData {
+	pub moderator: Option<ModeratorData>,
+	pub user_id: u32
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PurgeUserPacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub event: EventType,
+	pub data: PurgeUserData
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct TimeoutUserData {
+	pub user_name: String,
+	pub user_id: u32,
+	pub user_roles: Vec<String>
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct TimeoutData {
+	pub user: TimeoutUserData
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct TimeoutPacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub event: EventType,
+	pub data: TimeoutData
 }
 
 #[derive(Clone, Debug, Deserialize)]

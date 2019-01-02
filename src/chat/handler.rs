@@ -1,5 +1,5 @@
 
-use packets::{ChatMessageEventPacket, User};
+use packets::{ChatMessageEventPacket, UserJoinPacket, UserLeavePacket, PurgeUserPacket, TimeoutPacket};
 
 pub enum HandlerResult {
 	Nothing,
@@ -20,16 +20,14 @@ pub trait Handler {
 	fn on_message(&mut self, _message: ChatMessageEventPacket) -> HandlerResult;
 	
 	/// Fired when a user joins the channel.
-	fn user_join(&mut self, _user: User) -> HandlerResult { HandlerResult::Nothing }
+	fn on_user_join(&mut self, _packet: UserJoinPacket) -> HandlerResult { HandlerResult::Nothing }
 	/// Fired when a user leaves the channel.
-	fn user_leave(&mut self, _user: User) -> HandlerResult { HandlerResult::Nothing }
+	fn on_user_leave(&mut self, _packet: UserLeavePacket) -> HandlerResult { HandlerResult::Nothing }
 	/// Fired when a user is timed out in chat.
-	fn on_user_timeout(&mut self, _user: &str, _length: u16) -> HandlerResult { HandlerResult::Nothing }
+	fn on_user_timeout(&mut self, _packet: TimeoutPacket) -> HandlerResult { HandlerResult::Nothing }
 	/// Fired when a user is purged in chat.
-	fn on_user_purged(&mut self, _user: &str) -> HandlerResult { HandlerResult::Nothing }
+	fn on_user_purged(&mut self, _packet: PurgeUserPacket) -> HandlerResult { HandlerResult::Nothing }
 
 	/// Fired when chat has been cleared.
 	fn on_chat_cleared(&mut self) -> HandlerResult { HandlerResult::Nothing }
-	/// Fired when any message in chat has been deleted.
-	fn on_message_deleted(&mut self, _message: &str) -> HandlerResult { HandlerResult::Nothing }
 }
