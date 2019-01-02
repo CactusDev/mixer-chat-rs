@@ -1,5 +1,4 @@
 
-use std::vec::Vec;
 use api::MixerAPI;
 use chat::handler::{Handler, HandlerResult};
 use packets::*;
@@ -25,9 +24,6 @@ pub struct MixerChat {
 	channel:   String,
 	packet_id: u64,
 	
-	endpoints:     Vec<String>,
-	last_endpoint: u8,
-	permissions:   Vec<String>,
 	channel_data:  Channel,
 	chat:          APIChatResponse,
 
@@ -63,9 +59,6 @@ impl MixerChat {
 		Ok(MixerChat {
 			channel: channel.to_string(),
 			packet_id: 0,
-			endpoints: chat.clone().endpoints,
-			last_endpoint: 0,
-			permissions: chat.clone().permissions,
 			api: MixerAPI::new(token),
 			handler,
 			client,
@@ -79,25 +72,6 @@ impl MixerChat {
 		self.packet_id += 1;
 		self.client.send_message(&message).map_err(|_| "could not send message".to_string())?;
 		Ok(())
-	}
-
-	// fn handle_handler_result(&mut self, result: &HandlerResult) -> Result<(), String> {
-	// 	match result {
-	// 		HandlerResult::Nothing => {},
-	// 		HandlerResult::Error(e) => println!("An internal handler error has occurred: {}", e),
-	// 		HandlerResult::Message(message) => self.send_packet(OwnedMessage::Text(message.to_string()))?
-	// 	}
-	// 	Ok(())
-	// }
-
-	fn get_next_endpoint(&mut self) -> &str {
-		return if self.last_endpoint == ((self.endpoints.len() - 1) as u8) {
-			self.last_endpoint = 0;
-			&self.endpoints[self.last_endpoint as usize]
-		} else {
-			self.last_endpoint += 1;
-			&self.endpoints[self.last_endpoint as usize]
-		}
 	}
 
 	/// join the current connection to a given channel.
@@ -129,7 +103,7 @@ impl MixerChat {
 
 		// Now that we're connected to the channel, we want to fire the `on_connect` event.
 		let result = self.handler.on_connect();
-		// handle_handler_result(&result, self)?;
+		handle_handler_result(result, &mut self)?;
 
 		while let Ok(packet) = self.client.recv_message() {
 			match packet {
@@ -178,7 +152,7 @@ impl MixerChat {
 		self.send_packet(packet)?;
 
 		let result = self.handler.on_user_timeout(user, time);
-		// self.handle_handler_result(&result)?;
+		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -195,7 +169,7 @@ impl MixerChat {
 		self.send_packet(packet)?;
 
 		let result = self.handler.on_user_purged(user);
-		// self.handle_handler_result(&result)?;
+		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -213,7 +187,7 @@ impl MixerChat {
 		self.send_packet(packet)?;
 
 		let result = self.handler.on_message_deleted(message);
-		// self.handle_handler_result(&result)?;
+		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
@@ -228,7 +202,7 @@ impl MixerChat {
 		self.send_packet(packet)?;
 
 		let result = self.handler.on_chat_cleared();
-		// self.handle_handler_result(&result)?;
+		handle_handler_result(result, self)?;
 		Ok(())
 	}
 
