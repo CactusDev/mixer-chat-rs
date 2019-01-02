@@ -56,6 +56,15 @@ impl MixerChat {
 		Ok(())
 	}
 
+	fn handle_handler_result(&mut self, result: &HandlerResult) -> Result<(), String> {
+		match result {
+			HandlerResult::Nothing => {},
+			HandlerResult::Error(e) => println!("An internal handler error has occurred: {}", e),
+			HandlerResult::Message(message) => self.send_packet(OwnedMessage::Text(message.to_string()))?
+		}
+		Ok(())
+	}
+
 	fn get_next_endpoint(&mut self) -> &str {
 		return if self.last_endpoint == ((self.endpoints.len() - 1) as u8) {
 			self.last_endpoint = 0;
@@ -105,6 +114,11 @@ impl MixerChat {
 
 		println!("Joining initial channel: {}", &self.channel);
 		self.join(&channel_data, &chat.authkey);
+		println!("Connected to: {}", &self.channel);
+
+		// Now that we're connected to the channel, we want to fire the `on_connect` event.
+		let result = self.handler.on_connect();
+		self.handle_handler_result(&result)?;
 
 		Ok(())
 	}
@@ -119,10 +133,15 @@ impl MixerChat {
 							match packet {
 								OwnedMessage::Text(text) => {
 									match serde_json::from_str::<ChatMessageEventPacket>(&text) {
-										Ok(packet) => self.handler.on_message(packet),
+										Ok(packet) => {
+											// TODO: What even
+											// let result = &self.handler.on_message(packet);
+											// self.handle_handler_result(&result);
+											return Ok(());
+										},
 										Err(e) => {
 											println!("{:?}", e);
-											HandlerResult::Nothing
+											return Ok(());
 										}
 									};
 								},
@@ -174,7 +193,11 @@ impl MixerChat {
 			id: self.packet_id
 		};
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		let result = self.handler.on_user_timeout(user, time);
+		self.handle_handler_result(&result)?;
+		Ok(())
 	}
 
 	pub fn purge_user(&mut self, user: &str) -> Result<(), String> {
@@ -187,7 +210,11 @@ impl MixerChat {
 			id: self.packet_id
 		};
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		let result = self.handler.on_user_purged(user);
+		self.handle_handler_result(&result)?;
+		Ok(())
 	}
 
 	pub fn delete_message(&mut self, message: &str) -> Result<(), String> {
@@ -201,7 +228,11 @@ impl MixerChat {
 		};
 
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		let result = self.handler.on_message_deleted(message);
+		self.handle_handler_result(&result)?;
+		Ok(())
 	}
 
 	pub fn clear_chat(&mut self) -> Result<(), String> {
@@ -212,7 +243,11 @@ impl MixerChat {
 			id: self.packet_id
 		};
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		let result = self.handler.on_chat_cleared();
+		self.handle_handler_result(&result)?;
+		Ok(())
 	}
 
 	pub fn get_history(&mut self, amount: u8) -> Result<(), String> {
