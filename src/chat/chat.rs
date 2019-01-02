@@ -1,7 +1,7 @@
 
 use std::vec::Vec;
 use api::MixerAPI;
-use chat::handler::Handler;
+use chat::handler::{Handler, HandlerResult};
 use packets::*;
 
 use websocket::client::sync::Client;
@@ -119,8 +119,11 @@ impl MixerChat {
 							match packet {
 								OwnedMessage::Text(text) => {
 									match serde_json::from_str::<ChatMessageEventPacket>(&text) {
-										Ok(packet) => self.handler.on_message(packet).unwrap(),
-										Err(e) => println!("{:?}", e)
+										Ok(packet) => self.handler.on_message(packet),
+										Err(e) => {
+											println!("{:?}", e);
+											HandlerResult::Nothing
+										}
 									};
 								},
 								OwnedMessage::Ping(packet) => client.send_message(&OwnedMessage::Ping(packet)).unwrap(),
