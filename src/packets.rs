@@ -50,6 +50,13 @@ pub struct BasePacket {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EventPacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub event: EventType
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AuthenticationPacket {
 	#[serde(rename = "type")]
 	pub packet_type: PacketType,
@@ -227,6 +234,27 @@ pub struct UserGroup {
 pub struct User {
 	pub channel: Channel,
 	pub groups: Vec<UserGroup>
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ClearerData {
+	pub user_name: String,
+	pub user_id: u32,
+	pub user_roles: Vec<String>,
+	pub user_level: u32
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ClearMessagesData {
+	clearer: ClearerData
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ClearMessagesPacket {
+	#[serde(rename = "type")]
+	pub packet_type: PacketType,
+	pub event: EventType,
+	pub data: ClearMessagesData
 }
 
 #[derive(Clone, Debug, Deserialize)]

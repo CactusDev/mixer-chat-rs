@@ -14,7 +14,7 @@ fn handle_handler_result(result: HandlerResult, chat: &mut MixerChat) -> Result<
 	match result {
 		HandlerResult::Nothing => {},
 		HandlerResult::Error(e) => println!("An internal handler error has occurred: {}", e),
-		HandlerResult::Message(message) => chat.send_packet(OwnedMessage::Text(message.to_string()))?
+		HandlerResult::Message(message) => chat.send_message(&message, None)?
 	}
 	Ok(())
 }
@@ -34,7 +34,7 @@ pub struct MixerChat {
 	me: User
 }
 
-fn connect(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String> {
+fn create_client(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String> {
 	println!("Connecting to: {}", endpoint);
 	let client = ClientBuilder::new(&endpoint)
 		.unwrap()
@@ -54,7 +54,7 @@ impl MixerChat {
 		let chat = api.get_chat(channel)?;
 		let channel_data = api.get_channel(channel)?;
 
-		let client = connect(&chat.endpoints[0].clone())?;
+		let client = create_client(&chat.endpoints[0].clone())?;
 
 		Ok(MixerChat {
 			channel: channel.to_string(),
@@ -108,10 +108,30 @@ impl MixerChat {
 		while let Ok(packet) = self.client.recv_message() {
 			match packet {
 				OwnedMessage::Ping(packet) => self.client.send_message(&OwnedMessage::Ping(packet)).unwrap(),
-				OwnedMessage::Text(text) => {
-					let packet: ChatMessageEventPacket = serde_json::from_str(&text).map_err(|e| e.to_string())?;
-					let result = self.handler.on_message(packet);
-					handle_handler_result(result, &mut self)?;
+				OwnedMessage::Text(text) => match serde_json::from_str::<BasePacket>(&text) {
+					Ok(packet) => {
+						match packet.packet_type {
+							PacketType::Event => {
+								let event_packet = serde_json::from_str(&text);
+								if let Err(_) = event_packet {
+									continue;
+								}
+								let event_packet: EventPacket = event_packet.unwrap();
+								match event_packet.event {
+									EventType::ClearMessages => {
+										let result = self.handler.on_chat_cleared();
+										handle_handler_result(result, &mut self)?;
+									},
+									_ => {}
+								}
+							},
+							PacketType::Method => unreachable!(),
+							PacketType::Reply => {}
+						}
+						// let result = self.handler.on_message(packet);
+						// handle_handler_result(result, &mut self)?;
+					},
+					Err(_e) => println!("{}", text)
 				},
 				OwnedMessage::Close(_) => return Ok(()),
 				_ => println!("Unhandled packet type!")
