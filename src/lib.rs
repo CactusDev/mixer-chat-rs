@@ -5,7 +5,6 @@ mod macros;
 pub mod packets;
 pub mod api;
 
-#[macro_use]
 extern crate serde;
 
 #[macro_use]
