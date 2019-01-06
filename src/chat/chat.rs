@@ -1,7 +1,10 @@
 
 use api::MixerAPI;
 use chat::handler::{ChatHandler, ChatResult};
-use packets::chat::*;
+use packets::{
+	chat::*,
+	common::{User, Channel}
+};
 
 use websocket::{
 	client::sync::Client,

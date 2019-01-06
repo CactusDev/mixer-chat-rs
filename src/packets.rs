@@ -1,6 +1,88 @@
 
 // TODO: I know there's some cool tricks in Serde to make this A LOT cleaner, I just don't know them.
 
+pub mod common {
+
+	#[derive(Clone, Debug, Deserialize)]
+	#[serde(rename_all = "camelCase")]
+	pub struct Channel {
+		pub id: u32,
+		pub user_id: u32,
+		pub token: String,
+		pub online: bool,
+		pub featured: bool,
+		pub feature_level: i32,
+		pub partnered: bool,
+		pub transcoding_profile_id: Option<u32>,
+		pub suspended: bool,
+		pub name: String,
+		pub audience: String,
+		pub viewers_total: u64,
+		pub viewers_current: u64,
+		pub num_followers: u64,
+		pub description: Option<String>,
+		pub type_id: Option<u32>,
+		pub interactive: bool,
+		pub interactive_game_id: Option<u32>,
+		pub ftl: i8,
+		pub has_vod: bool,
+		pub language_id: Option<String>,
+		pub cover_id: Option<u32>,
+		pub thumbnail_id: Option<u32>,
+		pub badge_id: Option<u32>,
+		pub banner_url: Option<String>,
+		pub hostee_id: Option<u32>,
+		pub has_transcodes: bool,
+		pub vods_enabled: bool,
+		pub costream_id: Option<String>
+	}
+
+	#[derive(Clone, Debug, Deserialize)]
+	pub enum UserRole {
+		User,
+		Banned,
+		Pro,
+		VerifiedPartner,
+		Partner,
+		Subscriber,
+		ChannelEditor,
+		Mod,
+		GlobalMod,
+		Staff,
+		Founder,
+		Owner
+	}
+
+	#[derive(Clone, Debug, Deserialize)]
+	pub struct UserGroup {
+		pub id: u32,
+		pub name: UserRole
+	}
+
+	#[derive(Clone, Debug, Deserialize)]
+	pub struct User {
+		pub channel: Channel,
+		pub groups: Vec<UserGroup>
+	}
+
+	#[derive(Clone, Debug, Deserialize)]
+	pub struct FullUser {
+		pub level: u64,
+		pub social: HashMap<String, String>,  // TODO: This needs to be verified.
+		pub id: u64,
+		pub username: String,
+		pub verified: bool,
+		pub experience: u64,
+		pub sparks: u64,
+		pub avatar_url: String,
+		pub bio: String,
+		pub primary_team: Option<()>,  // TODO: This should go to `Team` instead.
+		pub created_at: String,
+		pub updated_at: String,
+		pub deleted_at: Option<String>,
+		pub channel: Channel
+	}
+}
 
 pub mod chat {
 
@@ -8,6 +90,8 @@ pub mod chat {
 		vec::Vec,
 		collections::HashMap
 	};
+
+	use packets::common::Channel;
 
 	#[derive(Clone, Serialize, Debug, Deserialize)]
 	#[serde(rename_all = "camelCase")]
@@ -182,68 +266,6 @@ pub mod chat {
 	}
 
 	#[derive(Clone, Debug, Deserialize)]
-	#[serde(rename_all = "camelCase")]
-	pub struct Channel {
-		pub id: u32,
-		pub user_id: u32,
-		pub token: String,
-		pub online: bool,
-		pub featured: bool,
-		pub feature_level: i32,
-		pub partnered: bool,
-		pub transcoding_profile_id: Option<u32>,
-		pub suspended: bool,
-		pub name: String,
-		pub audience: String,
-		pub viewers_total: u64,
-		pub viewers_current: u64,
-		pub num_followers: u64,
-		pub description: Option<String>,
-		pub type_id: Option<u32>,
-		pub interactive: bool,
-		pub interactive_game_id: Option<u32>,
-		pub ftl: i8,
-		pub has_vod: bool,
-		pub language_id: Option<String>,
-		pub cover_id: Option<u32>,
-		pub thumbnail_id: Option<u32>,
-		pub badge_id: Option<u32>,
-		pub banner_url: Option<String>,
-		pub hostee_id: Option<u32>,
-		pub has_transcodes: bool,
-		pub vods_enabled: bool,
-		pub costream_id: Option<String>
-	}
-
-	#[derive(Clone, Debug, Deserialize)]
-	pub enum UserRole {
-		User,
-		Banned,
-		Pro,
-		VerifiedPartner,
-		Partner,
-		Subscriber,
-		ChannelEditor,
-		Mod,
-		GlobalMod,
-		Staff,
-		Founder,
-		Owner
-	}
-
-	#[derive(Clone, Debug, Deserialize)]
-	pub struct UserGroup {
-		pub id: u32,
-		pub name: UserRole
-	}
-
-	#[derive(Clone, Debug, Deserialize)]
-	pub struct User {
-		pub channel: Channel,
-		pub groups: Vec<UserGroup>
-	}
-
-	#[derive(Clone, Debug, Deserialize)]
 	pub struct ClearerData {
 		pub user_name: String,
 		pub user_id: u32,
@@ -325,4 +347,56 @@ pub mod chat {
 
 pub mod constellation {
 
+	use packets::common::{Channel, User};
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub enum PacketType {
+		Method,
+		Event
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	#[serde(rename_all = "lowercase")]
+	pub enum PacketMethod {
+		LiveSubscribe
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct SubscribeParams {
+		pub events: Vec<String>
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct SubscribePacket {
+		#[serde(rename = "type")]
+		pub packet_type: PacketType,
+		pub method: PacketMethod,
+		pub params: SubscribeParams,
+		pub id: u64
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct ChannelHostedPacket {
+		pub hoster_id: u64,
+		pub hoster: Channel
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct ChannelFollowedPacket {
+		pub user: FullUser,
+		pub following: bool
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct ChannelSubscribedPacket {
+		pub user: FullUser
+	}
+
+	#[derive(Clone, Debug, Deserialize, Serialize)]
+	pub struct ChannelResubscribedPacket {
+		pub user: FullUser,
+		pub since: String,
+		pub until: String,
+		pub total_months: u16
+	}
 }
