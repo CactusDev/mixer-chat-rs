@@ -3,7 +3,9 @@
 
 pub mod common {
 
-	#[derive(Clone, Debug, Deserialize)]
+	use std::collections::HashMap;
+
+	#[derive(Clone, Debug, Serialize, Deserialize)]
 	#[serde(rename_all = "camelCase")]
 	pub struct Channel {
 		pub id: u32,
@@ -37,7 +39,7 @@ pub mod common {
 		pub costream_id: Option<String>
 	}
 
-	#[derive(Clone, Debug, Deserialize)]
+	#[derive(Clone, Debug, Serialize, Deserialize)]
 	pub enum UserRole {
 		User,
 		Banned,
@@ -53,19 +55,19 @@ pub mod common {
 		Owner
 	}
 
-	#[derive(Clone, Debug, Deserialize)]
+	#[derive(Clone, Debug, Serialize, Deserialize)]
 	pub struct UserGroup {
 		pub id: u32,
 		pub name: UserRole
 	}
 
-	#[derive(Clone, Debug, Deserialize)]
+	#[derive(Clone, Debug, Serialize, Deserialize)]
 	pub struct User {
 		pub channel: Channel,
 		pub groups: Vec<UserGroup>
 	}
 
-	#[derive(Clone, Debug, Deserialize)]
+	#[derive(Clone, Debug, Serialize, Deserialize)]
 	pub struct FullUser {
 		pub level: u64,
 		pub social: HashMap<String, String>,  // TODO: This needs to be verified.
@@ -347,7 +349,7 @@ pub mod chat {
 
 pub mod constellation {
 
-	use packets::common::{Channel, User};
+	use packets::common::{Channel, User, FullUser};
 
 	#[derive(Clone, Debug, Deserialize, Serialize)]
 	pub enum PacketType {
