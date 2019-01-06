@@ -8,13 +8,13 @@ macro_rules! mixer_endpoint {
 
 #[macro_export]
 macro_rules! mixer_request {
-	($endpoint:ident, $client:expr, $authorization:expr, $type:ty) => ({
-		match $client.get($endpoint).header($authorization).send() {
+	($endpoint:ident, $client:expr, $token:expr, $type:ty) => ({
+		match $client.get($endpoint).bearer_auth($token).send() {
 			Ok(mut result) => {
 				match result.status() {
-					StatusCode::Unauthorized => Err("unauthorized".to_string()),
-					StatusCode::Forbidden => Err("bad oauth request".to_string()),
-					StatusCode::Ok => {
+					StatusCode::UNAUTHORIZED => Err("unauthorized".to_string()),
+					StatusCode::FORBIDDEN => Err("bad oauth request".to_string()),
+					StatusCode::OK => {
 						match result.text() {
 							Ok(text) => {
 								// since we have the data from the request now, we just need to turn it into a JSON object of User.
