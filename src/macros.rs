@@ -17,7 +17,6 @@ macro_rules! mixer_request {
 					StatusCode::OK => {
 						match result.text() {
 							Ok(text) => {
-								// since we have the data from the request now, we just need to turn it into a JSON object of User.
 								match serde_json::from_str::<$type>(&text) {
 									Ok(user) => Ok(user),
 									Err(e) => Err(e.to_string())

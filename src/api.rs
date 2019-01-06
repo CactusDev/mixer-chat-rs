@@ -1,8 +1,5 @@
 
-use reqwest::{
-	StatusCode,
-	Client
-};
+use reqwest::{StatusCode, Client};
 
 use packets::{User, APIChatResponse, Channel};
 use serde_json;

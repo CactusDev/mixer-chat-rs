@@ -149,7 +149,7 @@ impl MixerChat {
 							PacketType::Reply => {}
 						}
 					},
-					Err(_e) => println!("{}", text)
+					Err(_e) => println!("Could not parse text into JSON: {}", text)
 				},
 				OwnedMessage::Close(_) => return Ok(()),
 				_ => println!("Unhandled packet type!")
