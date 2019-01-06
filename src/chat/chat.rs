@@ -1,20 +1,26 @@
 
 use api::MixerAPI;
-use chat::handler::{Handler, HandlerResult};
+use chat::handler::{ChatHandler, ChatResult};
 use packets::*;
 
-use websocket::client::sync::Client;
-use websocket::stream::sync::{TlsStream, TcpStream};
+use websocket::{
+	client::{
+		ClientBuilder,
+		sync::Client
+	},
+	stream::sync::{TlsStream, TcpStream},
+	OwnedMessage
+};
+
+use common::create_client;
 
 use serde_json::json;
 
-use websocket::{client::ClientBuilder, OwnedMessage};
-
-fn handle_handler_result(result: HandlerResult, chat: &mut MixerChat) -> Result<(), String> {
+fn handle_handler_result(result: ChatResult, chat: &mut MixerChat) -> Result<(), String> {
 	match result {
-		HandlerResult::Nothing => {},
-		HandlerResult::Error(e) => println!("An internal handler error has occurred: {}", e),
-		HandlerResult::Message(message) => chat.send_message(&message, None)?
+		ChatResult::Nothing => {},
+		ChatResult::Error(e) => println!("An internal handler error has occurred: {}", e),
+		ChatResult::Message(message) => chat.send_message(&message, None)?
 	}
 	Ok(())
 }
@@ -28,27 +34,15 @@ pub struct MixerChat {
 	chat:          APIChatResponse,
 
 	pub api: MixerAPI,
-	handler: Box<Handler>,
+	handler: Box<ChatHandler>,
 	client: Client<TlsStream<TcpStream>>,
 
 	me: User
 }
 
-fn create_client(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String> {
-	println!("Connecting to: {}", endpoint);
-	let client = ClientBuilder::new(&endpoint)
-		.unwrap()
-		.add_protocol("rust-websocket")
-		.connect_secure(None)
-		.unwrap();
-	println!("Connected to Mixer!");
-
-	Ok(client)
-}
-
 impl MixerChat {
 
-	pub fn connect(token: &str, channel: &str, handler: Box<Handler>) -> Result<Self, String> {
+	pub fn connect(token: &str, channel: &str, handler: Box<ChatHandler>) -> Result<Self, String> {
 		let api = MixerAPI::new(token);
 		let me = api.get_self()?;
 		let chat = api.get_chat(channel)?;
@@ -141,7 +135,7 @@ impl MixerChat {
 										let chat_packet = serde_json::from_str::<ChatMessageEventPacket>(&text).unwrap();
 										self.handler.on_message(chat_packet)
 									}
-									_ => HandlerResult::Nothing
+									_ => ChatResult::Nothing
 								};
 								handle_handler_result(result, &mut self)?;
 							},
