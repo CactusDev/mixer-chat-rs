@@ -1,5 +1,5 @@
 
-use packets::{ChatMessageEventPacket, UserJoinPacket, UserLeavePacket, PurgeUserPacket, TimeoutPacket};
+use packets::chat::{ChatMessageEventPacket, UserJoinPacket, UserLeavePacket, PurgeUserPacket, TimeoutPacket};
 
 pub enum ChatResult {
 	Nothing,

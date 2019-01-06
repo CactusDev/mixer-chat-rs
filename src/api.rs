@@ -1,7 +1,7 @@
 
 use reqwest::{StatusCode, Client};
 
-use packets::{User, APIChatResponse, Channel};
+use packets::chat::{User, APIChatResponse, Channel};
 use serde_json;
 use common::RequestError;
 
