@@ -1,4 +1,14 @@
 
+#[derive(Debug, Clone)]
+pub enum RequestError {
+	Unauthorized,
+	BadOauth,
+	BadResponseText(String),
+	BadJson,
+	UnknownStatusCode,
+	Other(String)
+}
+
 #[macro_export]
 macro_rules! mixer_endpoint {
 	($endpoint:expr) => ({
@@ -9,26 +19,26 @@ macro_rules! mixer_endpoint {
 #[macro_export]
 macro_rules! mixer_request {
 	($endpoint:ident, $client:expr, $token:expr, $type:ty) => ({
+		use $crate::macros::RequestError;
+
 		match $client.get($endpoint).bearer_auth($token).send() {
 			Ok(mut result) => {
 				match result.status() {
-					StatusCode::UNAUTHORIZED => Err("unauthorized".to_string()),
-					StatusCode::FORBIDDEN => Err("bad oauth request".to_string()),
+					StatusCode::UNAUTHORIZED => Err(RequestError::Unauthorized),
+					StatusCode::FORBIDDEN => Err(RequestError::BadOauth),
 					StatusCode::OK => {
 						match result.text() {
 							Ok(text) => {
-								match serde_json::from_str::<$type>(&text) {
-									Ok(user) => Ok(user),
-									Err(e) => Err(e.to_string())
-								}
+								let user = serde_json::from_str::<$type>(&text).map_err(|_| RequestError::BadJson)?;
+								Ok(user)
 							},
-							Err(err) => Err(format!("could not get response text {}", err.to_string()))
+							Err(err) => Err(RequestError::BadResponseText(err.to_string()))
 						}
 					},
-					_ => Err("unknown status".to_string())
+					_ => Err(RequestError::UnknownStatusCode)
 				}
 			},
-			Err(e) => Err(e.to_string())
+			Err(e) => Err(RequestError::Other(e.to_string()))
 		}
 	})
 }
