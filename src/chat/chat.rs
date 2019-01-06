@@ -1,16 +1,25 @@
 
 use api::MixerAPI;
+use macros::RequestError;
 use chat::handler::{Handler, HandlerResult};
 use packets::*;
 
 use websocket::client::sync::Client;
 use websocket::stream::sync::{TlsStream, TcpStream};
+use websocket::result::WebSocketError;
 
 use serde_json::json;
 
 use websocket::{client::ClientBuilder, OwnedMessage};
 
-fn handle_handler_result(result: HandlerResult, chat: &mut MixerChat) -> Result<(), String> {
+#[derive(Debug)]
+pub enum MixerError {
+	Websocket(WebSocketError),
+	Request(RequestError),
+	Other(String)
+}
+
+fn handle_handler_result(result: HandlerResult, chat: &mut MixerChat) -> Result<(), MixerError> {
 	match result {
 		HandlerResult::Nothing => {},
 		HandlerResult::Error(e) => println!("An internal handler error has occurred: {}", e),
@@ -34,13 +43,13 @@ pub struct MixerChat {
 	me: User
 }
 
-fn create_client(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String> {
+fn create_client(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, MixerError> {
 	println!("Connecting to: {}", endpoint);
 	let client = ClientBuilder::new(&endpoint)
 		.unwrap()
 		.add_protocol("rust-websocket")
 		.connect_secure(None)
-		.unwrap();
+		.map_err(|e| MixerError::Websocket(e))?;
 	println!("Connected to Mixer!");
 
 	Ok(client)
@@ -48,11 +57,11 @@ fn create_client(endpoint: &str) -> Result<Client<TlsStream<TcpStream>>, String>
 
 impl MixerChat {
 
-	pub fn connect(token: &str, channel: &str, handler: Box<Handler>) -> Result<Self, String> {
+	pub fn connect(token: &str, channel: &str, handler: Box<Handler>) -> Result<Self, MixerError> {
 		let api = MixerAPI::new(token);
-		let me = api.get_self()?;
-		let chat = api.get_chat(channel)?;
-		let channel_data = api.get_channel(channel)?;
+		let me = api.get_self().map_err(|e| MixerError::Request(e))?;
+		let chat = api.get_chat(channel).map_err(|e| MixerError::Request(e))?;
+		let channel_data = api.get_channel(channel).map_err(|e| MixerError::Request(e))?;
 
 		let client = create_client(&chat.endpoints[0].clone())?;
 
@@ -68,14 +77,14 @@ impl MixerChat {
 		})
 	}
 
-	pub fn send_packet(&mut self, message: OwnedMessage) -> Result<(), String> {
+	pub fn send_packet(&mut self, message: OwnedMessage) -> Result<(), MixerError> {
 		self.packet_id += 1;
-		self.client.send_message(&message).map_err(|_| "could not send message".to_string())?;
+		self.client.send_message(&message).map_err(|e| MixerError::Websocket(e))?;
 		Ok(())
 	}
 
 	/// join the current connection to a given channel.
-	pub fn join(&mut self) -> Result<(), String> {
+	pub fn join(&mut self) -> Result<(), MixerError> {
 		// CLEANUP: Do we _really_ need to clone all of those? Is there a better way
 		//          to satisfy the borrow checker?
 		let channel_id = self.channel_data.id.clone();
@@ -96,7 +105,7 @@ impl MixerChat {
 	}
 
 	/// Begin handing chat packets for the connected channel
-	pub fn handle_chat(mut self) -> Result<(), String> {
+	pub fn handle_chat(mut self) -> Result<(), MixerError> {
 		println!("Joining channel: {}", &self.channel);
 		self.join()?;
 		println!("Connected to: {}", &self.channel);
@@ -149,7 +158,7 @@ impl MixerChat {
 							PacketType::Reply => {}
 						}
 					},
-					Err(_e) => println!("Could not parse text into JSON: {}", text)
+					Err(_) => println!("Could not parse text into JSON: {}", text)
 				},
 				OwnedMessage::Close(_) => return Ok(()),
 				_ => println!("Unhandled packet type!")
@@ -159,7 +168,7 @@ impl MixerChat {
 	}
 
 	/// Send a message to the connected channel
-	pub fn send_message(&mut self, message: &str, target: Option<String>) -> Result<(), String> {
+	pub fn send_message(&mut self, message: &str, target: Option<String>) -> Result<(), MixerError> {
 		let (arguments, method) = match target {
 			Some(target) => (vec! [ target, message.to_string() ], MethodType::Whisper),
 			None => (vec! [ message.to_string() ], MethodType::Msg)
@@ -173,11 +182,13 @@ impl MixerChat {
 		};
 
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		Ok(())
 	}
 
 	// Timeout a given user from chat for the provided time.
-	pub fn timeout_user(&mut self, user: &str, time: u16) -> Result<(), String> {
+	pub fn timeout_user(&mut self, user: &str, time: u16) -> Result<(), MixerError> {
 		let arguments = vec! [ user.to_string(), time.to_string() ];
 
 		let packet = ArgumentPacket {
@@ -192,7 +203,7 @@ impl MixerChat {
 		Ok(())
 	}
 
-	pub fn purge_user(&mut self, user: &str) -> Result<(), String> {
+	pub fn purge_user(&mut self, user: &str) -> Result<(), MixerError> {
 		let arguments = vec! [ user.to_string() ];
 
 		let packet = ArgumentPacket {
@@ -207,7 +218,7 @@ impl MixerChat {
 		Ok(())
 	}
 
-	pub fn delete_message(&mut self, message: &str) -> Result<(), String> {
+	pub fn delete_message(&mut self, message: &str) -> Result<(), MixerError> {
 		let arguments = vec! [ message.to_string() ];
 
 		let packet = ArgumentPacket {
@@ -223,7 +234,7 @@ impl MixerChat {
 		Ok(())
 	}
 
-	pub fn clear_chat(&mut self) -> Result<(), String> {
+	pub fn clear_chat(&mut self) -> Result<(), MixerError> {
 		let packet = ArgumentPacket {
 			packet_type: PacketType::Method,
 			method: MethodType::ClearMessages,
@@ -236,9 +247,9 @@ impl MixerChat {
 		Ok(())
 	}
 
-	pub fn get_history(&mut self, amount: u8) -> Result<(), String> {
+	pub fn get_history(&mut self, amount: u8) -> Result<(), MixerError> {
 		if amount > 100 {
-			return Err("cannot get more than 100 messages in history".to_string());
+			return Err(MixerError::Other("cannot get more than 100 messages in history".to_string()));
 		}
 
 		let arguments = vec! [ amount.to_string() ];
@@ -249,6 +260,8 @@ impl MixerChat {
 			id: self.packet_id
 		};
 		let packet = OwnedMessage::Text(serde_json::to_string(&packet).unwrap());
-		self.send_packet(packet)
+		self.send_packet(packet)?;
+
+		Ok(())
 	}
 }
