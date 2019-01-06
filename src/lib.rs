@@ -2,8 +2,11 @@
 #[macro_use]
 mod macros;
 
-pub mod packets;
+pub mod chat;
+pub mod constellation;
 pub mod api;
+pub mod common;
+pub mod packets;
 
 extern crate serde;
 
@@ -11,3 +14,4 @@ extern crate serde;
 extern crate serde_derive;
 extern crate reqwest;
 extern crate serde_json;
+extern crate websocket;

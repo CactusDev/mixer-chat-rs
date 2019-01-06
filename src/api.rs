@@ -3,6 +3,7 @@ use reqwest::{StatusCode, Client};
 
 use packets::{User, APIChatResponse, Channel};
 use serde_json;
+use common::RequestError;
 
 /// Handles all interactions between us and Mixer's API.
 pub struct MixerAPI {
@@ -24,17 +25,17 @@ impl MixerAPI {
 	}
 
 	/// Get the current user based off the `token` that was provided.
-	pub fn get_self(&self) -> Result<User, String> {
+	pub fn get_self(&self) -> Result<User, RequestError> {
 		let endpoint = mixer_endpoint!("users/current");
 		mixer_request!(endpoint, self.client, &self.token, User)
 	}
 
-	pub fn get_channel(&self, channel: &str) -> Result<Channel, String> {
+	pub fn get_channel(&self, channel: &str) -> Result<Channel, RequestError> {
 		let endpoint = mixer_endpoint!(&format!("channels/{}", channel));
 		mixer_request!(endpoint, self.client, &self.token, Channel)
 	}
 
-	pub fn get_chat(&self, channel: &str) -> Result<APIChatResponse, String> {
+	pub fn get_chat(&self, channel: &str) -> Result<APIChatResponse, RequestError> {
 		let channel_data = self.get_channel(channel)?;
 		let endpoint = mixer_endpoint!(&format!("chats/{}", channel_data.id));
 		mixer_request!(endpoint, self.client, &self.token, APIChatResponse)

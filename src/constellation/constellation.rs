@@ -2,28 +2,27 @@
 use std::vec::Vec;
 
 use websocket::{
-	client::{
-		ClientBuilder,
-		sync::Client
-	},
+	client::sync::Client,
 	stream::sync::{TlsStream, TcpStream},
 	OwnedMessage
 };
 
-use common::create_client;
+use common::{create_client, MixerError};
 
 const CONSTELLATION_URL: &'static str = "wss://constellation.mixer.com";
 
 pub struct Constellation {
+	client: Client<TlsStream<TcpStream>>,
 	channel: u32
 }
 
 impl Constellation {
 
-	pub fn connect(channel: u32) -> Result<Self, String> {
+	pub fn connect(channel: u32) -> Result<Self, MixerError> {
 		let client = create_client(CONSTELLATION_URL)?;
 
 		Ok(Constellation {
+			client,
 			channel
 		})
 	}
