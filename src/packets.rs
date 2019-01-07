@@ -7,6 +7,30 @@ pub mod common {
 
 	#[derive(Clone, Debug, Serialize, Deserialize)]
 	#[serde(rename_all = "camelCase")]
+	pub struct SocialInfo {
+		pub twitter: Option<String>,
+		pub facebook: Option<String>,
+		pub youtube: Option<String>,
+		pub player: Option<String>,
+		pub discord: Option<String>,
+		pub verified: Option<String>
+	}
+
+	#[derive(Clone, Debug, Serialize, Deserialize)]
+	#[serde(rename_all = "camelCase")]
+	pub struct Team {
+		pub id: u64,
+		pub owner_id: u64,
+		pub token: String,
+		pub name: String,
+		pub description: String,
+		pub logo_url: String,
+		pub background_url: String,
+		pub social: Option<SocialInfo>
+	}
+
+	#[derive(Clone, Debug, Serialize, Deserialize)]
+	#[serde(rename_all = "camelCase")]
 	pub struct Channel {
 		pub id: u32,
 		pub user_id: u32,
@@ -78,7 +102,7 @@ pub mod common {
 		pub sparks: u64,
 		pub avatar_url: String,
 		pub bio: String,
-		pub primary_team: Option<()>,  // TODO: This should go to `Team` instead.
+		pub primary_team: Option<Team>,
 		pub created_at: String,
 		pub updated_at: String,
 		pub deleted_at: Option<String>,
